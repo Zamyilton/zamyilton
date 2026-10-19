@@ -1,6 +1,6 @@
 import * as THREE from "./vendor/three.module.min.mjs";
 import { clamp, deviceProfile } from "./motion.mjs";
-import { dragonOutline, dragonHoles, dragonAsset } from "./identity.mjs";
+import { dragonShapes, dragonAsset } from "./identity.mjs";
 
 function drawPath(target, commands) {
   const point=(x,y)=>[(x-135)/100,(135-y)/100];
@@ -13,11 +13,13 @@ function drawPath(target, commands) {
 }
 
 export function buildDragonGeometry() {
-  const shape = new THREE.Shape();
-  drawPath(shape,dragonOutline);
-  dragonHoles.forEach(commands=>{const hole=new THREE.Path();drawPath(hole,commands);shape.holes.push(hole);});
+  const shapes=dragonShapes.map(component=>{
+    const shape=new THREE.Shape();drawPath(shape,component.outline);
+    component.holes.forEach(commands=>{const hole=new THREE.Path();drawPath(hole,commands);shape.holes.push(hole);});
+    return shape;
+  });
   const uv=(vertices,index)=>new THREE.Vector2((vertices[index*3]+1.35)/2.7,(vertices[index*3+1]+1.35)/2.7);
-  const geometry = new THREE.ExtrudeGeometry(shape, {
+  const geometry = new THREE.ExtrudeGeometry(shapes, {
     depth:.2,bevelEnabled:true,bevelSegments:2,steps:1,bevelSize:.0018,bevelThickness:.018,
     UVGenerator:{
       generateTopUV:(_geometry,vertices,a,b,c)=>[a,b,c].map(i=>uv(vertices,i)),

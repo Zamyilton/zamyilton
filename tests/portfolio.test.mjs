@@ -71,6 +71,8 @@ test("first dragon sculpture is finite, volumetric, and preserves its negative s
   mesh.updateMatrixWorld();
   ray.set(new THREE.Vector3(.55,.05,3),new THREE.Vector3(0,0,-1));
   assert.ok(ray.intersectObject(mesh).length>0,"body has solid front and back faces");
+  ray.set(new THREE.Vector3(-.6,.6,3),new THREE.Vector3(0,0,-1));
+  assert.ok(ray.intersectObject(mesh).length>0,"the separate wing contour is included in the sculpture");
   ray.set(new THREE.Vector3(-.1,0,3),new THREE.Vector3(0,0,-1));
   assert.equal(ray.intersectObject(mesh).length,0,"the open space between wing and body is not filled");
   assert.ok(Array.from(geometry.getAttribute("uv").array).every(value=>Number.isFinite(value)&&value>=0&&value<=1),"artwork coordinates stay inside the selected PNG");
