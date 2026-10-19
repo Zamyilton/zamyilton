@@ -1,6 +1,6 @@
+import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
 "use strict";
-(function () {
-  document.documentElement.classList.add("has-js");
+(function(){
   var projectData = {
     ileotaku: {
       title: "IleOtaku", kind: "PLATFORM / INDEPENDENT PRODUCT", type: "READERS / CREATORS / COMMUNITY",
@@ -51,148 +51,208 @@
     }
   };
 
-  var toggle = document.querySelector(".nav-toggle");
-  var nav = document.querySelector(".nav-links");
-  if (toggle && nav) {
-    toggle.hidden = false;
-    toggle.addEventListener("click", function () {
-      var open = toggle.getAttribute("aria-expanded") !== "true";
-      toggle.setAttribute("aria-expanded", String(open));
-      nav.classList.toggle("open", open);
-    });
-    nav.querySelectorAll("a").forEach(function (link) {
-      link.addEventListener("click", function () {
-        nav.classList.remove("open"); toggle.setAttribute("aria-expanded", "false");
-      });
-    });
-    document.addEventListener("keydown", function (event) {
-      if (event.key === "Escape" && nav.classList.contains("open")) {
-        nav.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); toggle.focus();
-      }
-    });
-  }
 
-  var tabs = Array.from(document.querySelectorAll("[data-project]"));
-  var projectIcons = {
-    ileotaku: '<path d="M100 42C74 24 44 25 26 33v106c26-8 49-5 74 11 25-16 48-19 74-11V33c-18-8-48-9-74 9Z"/><path d="M100 42v108M45 53c12-2 24 1 36 7m-36 19c12-2 24 1 36 7m38-26c12-6 24-9 36-7m-36 33c12-6 24-9 36-7"/>',
-    nexus: '<path d="m100 22 64 68-64 68-64-68Z"/><path d="m100 22 22 68-22 68-22-68Zm-64 68h128"/>',
-    valen: '<circle cx="100" cy="90" r="62"/><path d="M55 77v26m15-42v58m15-66v74m15-95v116m15-95v74m15-66v58m15-42v26"/>',
-    zuwachs: '<circle cx="100" cy="90" r="66"/><path d="m151 42-8 35-34 20-4 43-16 9-4-39-30 11-12-12 36-20-8-32 13-7 20 27 30-27Z"/>'
-  };
-  var stage = document.querySelector(".preview-stage");
-  var panel = document.getElementById("preview-panel");
-  function chooseProject(id, focus) {
-    var data = projectData[id];
-    if (!data || !stage) return;
-    stage.dataset.active = id;
-    stage.querySelector(".project-mark svg").innerHTML = projectIcons[id];
-    stage.querySelector(".preview-type").textContent = data.type;
-    var title = stage.querySelector(".preview-title");
-    title.textContent = data.title;
-    var dot = document.createElement("span"); dot.textContent = "."; title.appendChild(dot);
-    stage.querySelector(".preview-desc").textContent = data.preview;
-    stage.querySelector(".preview-open").dataset.study = id;
-    tabs.forEach(function (tab) {
-      var active = tab.dataset.project === id;
-      tab.setAttribute("aria-selected", String(active));
-      tab.tabIndex = active ? 0 : -1;
-      if (active && focus) tab.focus();
-    });
-    if (panel) {
-      panel.setAttribute("aria-labelledby", "tab-" + id);
-      panel.textContent = data.title + ": " + data.preview;
+  const root = document.documentElement;
+  root.classList.add("js");
+  const preference = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : {matches:false};
+  let stored = null;
+  try { stored = localStorage.getItem("zamyilton-motion"); } catch (_) {}
+  let manualMotion = stored === "on" || stored === "off";
+  let motionEnabled = manualMotion ? stored === "on" : !preference.matches;
+  let scene = null, sceneLoading = false, sceneFailed = false, sceneAllowed = false;
+  let frame = 0, sceneInput = {progress:0,x:0,y:0};
+  const hero = document.querySelector(".hero-section");
+  const heroArt = document.getElementById("hero-art");
+  const sceneHost = document.getElementById("hero-scene");
+  const motionButton = document.querySelector(".motion-toggle");
+  const dialog = document.querySelector(".study-dialog");
+  const parallaxElements = Array.from(document.querySelectorAll("[data-depth]"));
+  const marquees = Array.from(document.querySelectorAll("[data-marquee]"));
+  const chapters = Array.from(document.querySelectorAll("[data-chapter]"));
+  const railLinks = Array.from(document.querySelectorAll("[data-rail]"));
+  function scenePaused() { return !motionEnabled || !!dialog?.hasAttribute("open"); }
+  function applyMotion() {
+    root.dataset.motion = motionEnabled ? "on" : "off";
+    if(motionButton){
+      motionButton.hidden=false;
+      motionButton.setAttribute("aria-pressed",String(motionEnabled));
+      motionButton.setAttribute("aria-label","Animated effects");
+      motionButton.querySelector(".motion-label").textContent=motionEnabled?"Motion on":"Motion off";
     }
+    if(!motionEnabled){
+      parallaxElements.forEach(el=>el.style.setProperty("--parallax-y","0px"));
+      marquees.forEach(el=>el.style.setProperty("--word-shift","0px"));
+      document.querySelectorAll(".magnetic").forEach(el=>{el.style.setProperty("--mx","0px");el.style.setProperty("--my","0px");});
+      document.querySelectorAll("[data-tilt]").forEach(el=>{el.style.setProperty("--rx","0deg");el.style.setProperty("--ry","0deg");});
+    }
+    scene?.setPaused(scenePaused());
+    if(motionEnabled)ensureScene();
+    requestUpdate();
   }
-  tabs.forEach(function (tab, index) {
-    tab.addEventListener("click", function () { chooseProject(tab.dataset.project, false); });
-    tab.addEventListener("keydown", function (event) {
-      var target = index;
-      if (event.key === "ArrowRight") target = (index + 1) % tabs.length;
-      else if (event.key === "ArrowLeft") target = (index + tabs.length - 1) % tabs.length;
-      else if (event.key === "Home") target = 0;
-      else if (event.key === "End") target = tabs.length - 1;
-      else return;
-      event.preventDefault(); chooseProject(tabs[target].dataset.project, true);
-    });
+  function ensureScene(){
+    if(!sceneAllowed||scene||sceneLoading||sceneFailed||!motionEnabled||navigator.connection?.saveData||!("WebGL2RenderingContext" in window))return;
+    const rect=hero?.getBoundingClientRect();
+    if(rect&&(rect.bottom<0||rect.top>window.innerHeight))return;
+    sceneLoading=true;
+    import("./scene.mjs").then(({startScene})=>{
+      scene=startScene({canvas:document.getElementById("hero-canvas"),host:sceneHost,observeTarget:hero,initialMotion:!scenePaused()});
+      scene.setInput(sceneInput);
+      scene.setPaused(scenePaused());
+    }).catch(()=>{sceneFailed=true;if(sceneHost)sceneHost.dataset.scene="fallback";}).finally(()=>{sceneLoading=false;});
+  }
+  motionButton?.addEventListener("click",()=>{
+    manualMotion=true;motionEnabled=!motionEnabled;sceneAllowed=true;
+    try{localStorage.setItem("zamyilton-motion",motionEnabled?"on":"off");}catch(_){}
+    applyMotion();
   });
+  preference.addEventListener?.("change",event=>{if(!manualMotion){motionEnabled=!event.matches;applyMotion();}});
 
-  var dialog = document.querySelector(".study-dialog");
-  var previousFocus = null;
-  function renderStudy(id) {
-    var data = projectData[id];
-    if (!data || !dialog) return;
-    previousFocus = document.activeElement;
-    document.getElementById("study-title").textContent = data.title;
-    document.getElementById("study-kind").textContent = data.kind;
-    document.getElementById("study-summary").textContent = data.summary;
-    var content = document.getElementById("study-content");
-    var links = document.getElementById("study-links");
-    content.replaceChildren(); links.replaceChildren();
-    data.blocks.forEach(function (block) {
-      var section = document.createElement("section"); section.className = "study-block";
-      var heading = document.createElement("h3"); heading.textContent = block[0]; section.appendChild(heading);
-      if (Array.isArray(block[1])) {
-        var ul = document.createElement("ul");
-        block[1].forEach(function (line) { var li = document.createElement("li"); li.textContent = line; ul.appendChild(li); });
-        section.appendChild(ul);
-      } else {
-        var p = document.createElement("p"); p.textContent = block[1]; section.appendChild(p);
-      }
+  const toggle=document.querySelector(".nav-toggle"),nav=document.getElementById("nav-links");
+  function closeNav(){nav?.classList.remove("open");toggle?.setAttribute("aria-expanded","false");}
+  if(toggle&&nav){
+    toggle.hidden=false;
+    toggle.addEventListener("click",()=>{
+      const open=toggle.getAttribute("aria-expanded")!=="true";
+      toggle.setAttribute("aria-expanded",String(open));nav.classList.toggle("open",open);
+    });
+    nav.querySelectorAll("a").forEach(link=>link.addEventListener("click",closeNav));
+    document.addEventListener("keydown",event=>{if(event.key==="Escape"&&nav.classList.contains("open")){closeNav();toggle.focus();}});
+  }
+
+  let previousFocus=null;
+  function renderStudy(id){
+    const data=projectData[id];if(!data||!dialog)return;
+    previousFocus=document.activeElement;
+    document.getElementById("study-title").textContent=data.title;
+    document.getElementById("study-kind").textContent=data.kind;
+    document.getElementById("study-summary").textContent=data.summary;
+    const content=document.getElementById("study-content"),links=document.getElementById("study-links");
+    content.replaceChildren();links.replaceChildren();
+    data.blocks.forEach(([title,value])=>{
+      const section=document.createElement("section");section.className="study-block";
+      const heading=document.createElement("h3");heading.textContent=title;section.appendChild(heading);
+      if(Array.isArray(value)){
+        const ul=document.createElement("ul");
+        value.forEach(line=>{const li=document.createElement("li");li.textContent=line;ul.appendChild(li);});section.appendChild(ul);
+      }else{const p=document.createElement("p");p.textContent=value;section.appendChild(p);}
       content.appendChild(section);
     });
-    data.links.forEach(function (link) {
-      var a = document.createElement("a"); a.textContent = link[0] + " ↗"; a.href = link[1];
-      if (link[1].indexOf("https://") === 0) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
-      links.appendChild(a);
+    data.links.forEach(([label,url])=>{
+      const a=document.createElement("a");a.textContent=label+" ↗";a.href=url;
+      if(url.startsWith("https://")){a.target="_blank";a.rel="noopener noreferrer";}links.appendChild(a);
     });
-    if (typeof dialog.showModal === "function") dialog.showModal();
-    else dialog.setAttribute("open", "");
-    document.body.classList.add("modal-open");
+    if(typeof dialog.showModal==="function")dialog.showModal();else dialog.setAttribute("open","");
+    document.body.classList.add("modal-open");scene?.setPaused(true);
     dialog.querySelector(".dialog-close").focus();
   }
-  document.querySelectorAll("[data-study]").forEach(function (button) {
-    button.addEventListener("click", function () { renderStudy(button.dataset.study); });
-  });
-  function afterClose() {
-    document.body.classList.remove("modal-open");
-    if (previousFocus && typeof previousFocus.focus === "function") previousFocus.focus();
+  function afterClose(){document.body.classList.remove("modal-open");scene?.setPaused(scenePaused());previousFocus?.focus?.();}
+  function closeStudy(){
+    if(!dialog)return;
+    if(typeof dialog.close==="function")dialog.close();else{dialog.removeAttribute("open");afterClose();}
   }
-  function closeStudy() {
-    if (!dialog) return;
-    if (typeof dialog.close === "function") dialog.close(); else { dialog.removeAttribute("open"); afterClose(); }
-  }
-  if (dialog) {
-    dialog.querySelector(".dialog-close").addEventListener("click", closeStudy);
-    dialog.addEventListener("close", afterClose);
-    dialog.addEventListener("click", function (event) {
-      var r = dialog.getBoundingClientRect();
-      if (event.target === dialog && (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom)) closeStudy();
+  document.querySelectorAll("[data-study]").forEach(button=>button.addEventListener("click",()=>renderStudy(button.dataset.study)));
+  if(dialog){
+    dialog.querySelector(".dialog-close").addEventListener("click",closeStudy);
+    dialog.addEventListener("close",afterClose);
+    dialog.addEventListener("click",event=>{
+      const r=dialog.getBoundingClientRect();
+      if(event.target===dialog&&(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom))closeStudy();
     });
-    dialog.addEventListener("keydown", function (event) {
-      if (event.key === "Escape" && typeof dialog.close !== "function") closeStudy();
+    dialog.addEventListener("keydown",event=>{
+      if(event.key==="Escape"&&typeof dialog.close!=="function"){event.preventDefault();closeStudy();}
+      if(event.key==="Tab"){
+        const items=dialog.querySelectorAll("button:not([disabled]),a[href],[tabindex='0']");
+        if(!items.length)return;
+        const first=items[0],last=items[items.length-1];
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+      }
     });
   }
 
-  var copy = document.querySelector(".copy-email");
-  if (copy && navigator.clipboard && window.isSecureContext) {
-    copy.hidden = false;
-    copy.addEventListener("click", async function () {
-      try {
-        await navigator.clipboard.writeText("zamyilton@ileotaku.com");
-        copy.textContent = "Email copied ✓";
-        document.getElementById("copy-status").textContent = "Email address copied to clipboard.";
-        window.setTimeout(function () { copy.textContent = "Copy email ⧉"; }, 2400);
-      } catch (_) { document.getElementById("copy-status").textContent = "Copy unavailable. Use the email link above."; }
+  function updateScroll(){
+    frame=0;
+    const vh=Math.max(1,window.innerHeight),y=window.scrollY||0;
+    const max=Math.max(1,document.documentElement.scrollHeight-vh);
+    document.querySelector(".page-progress>span")?.style.setProperty("transform","scaleX("+clamp(y/max)+")");
+    document.querySelector(".site-header")?.classList.toggle("scrolled",y>25);
+    if(hero){
+      const rect=hero.getBoundingClientRect();
+      sceneInput.progress=heroProgress(rect.top,rect.height,vh,window.innerWidth<=850?74:82);
+      hero.style.setProperty("--hero-progress",motionEnabled?String(sceneInput.progress):"0");
+      scene?.setInput(sceneInput);
+      ensureScene();
+    }
+    if(motionEnabled){
+      const updates=parallaxElements.map(el=>{
+        const rect=el.getBoundingClientRect();
+        return {el,rect};
+      });
+      updates.forEach(({el,rect})=>{if(rect.bottom>-160&&rect.top<vh+160)el.style.setProperty("--parallax-y",parallaxOffset(rect.top+rect.height/2,vh,Number(el.dataset.depth)).toFixed(2)+"px");});
+      marquees.forEach(el=>{
+        const rect=el.parentElement.getBoundingClientRect();
+        if(rect.bottom>0&&rect.top<vh)el.style.setProperty("--word-shift",(-clamp((vh-rect.top)/(vh+rect.height))*160).toFixed(2)+"px");
+      });
+    }
+    let active=chapters[0]?.dataset.chapter;
+    chapters.forEach(chapter=>{if(chapter.getBoundingClientRect().top<vh*.55)active=chapter.dataset.chapter;});
+    railLinks.forEach(link=>{if(link.dataset.rail===active)link.setAttribute("aria-current","true");else link.removeAttribute("aria-current");});
+  }
+  function requestUpdate(){if(!frame)frame=requestAnimationFrame(updateScroll);}
+  window.addEventListener("scroll",requestUpdate,{passive:true});
+  window.addEventListener("resize",()=>{if(window.innerWidth>850)closeNav();requestUpdate();},{passive:true});
+
+  if(heroArt){
+    heroArt.addEventListener("pointermove",event=>{
+      if(!motionEnabled||event.pointerType==="touch")return;
+      const r=heroArt.getBoundingClientRect();
+      sceneInput.x=clamp((event.clientX-r.left)/Math.max(1,r.width)*2-1,-1,1);
+      sceneInput.y=clamp(1-(event.clientY-r.top)/Math.max(1,r.height)*2,-1,1);
+      scene?.setInput(sceneInput);
+    },{passive:true});
+    heroArt.addEventListener("pointerleave",()=>{sceneInput.x=0;sceneInput.y=0;scene?.setInput(sceneInput);});
+  }
+  const finePointer=window.matchMedia?.("(hover: hover) and (pointer: fine)").matches;
+  if(finePointer){
+    document.querySelectorAll("[data-tilt]").forEach(el=>{
+      el.addEventListener("pointermove",event=>{
+        if(!motionEnabled)return;
+        const r=el.getBoundingClientRect(),x=(event.clientX-r.left)/Math.max(1,r.width)-.5,y=(event.clientY-r.top)/Math.max(1,r.height)-.5;
+        el.style.setProperty("--rx",(-y*5).toFixed(2)+"deg");el.style.setProperty("--ry",(x*6).toFixed(2)+"deg");
+      },{passive:true});
+      el.addEventListener("pointerleave",()=>{el.style.setProperty("--rx","0deg");el.style.setProperty("--ry","0deg");});
+    });
+    document.querySelectorAll(".magnetic").forEach(el=>{
+      el.addEventListener("pointermove",event=>{
+        if(!motionEnabled)return;
+        const r=el.getBoundingClientRect();
+        el.style.setProperty("--mx",clamp((event.clientX-r.left-r.width/2)*.07,-5,5).toFixed(2)+"px");
+        el.style.setProperty("--my",clamp((event.clientY-r.top-r.height/2)*.09,-4,4).toFixed(2)+"px");
+      },{passive:true});
+      el.addEventListener("pointerleave",()=>{el.style.setProperty("--mx","0px");el.style.setProperty("--my","0px");});
     });
   }
-  var year = document.getElementById("year");
-  if (year) year.textContent = String(new Date().getFullYear());
-  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if ("IntersectionObserver" in window && !reduce) {
-    var observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) { if (entry.isIntersecting) { entry.target.classList.add("is-visible"); observer.unobserve(entry.target); } });
-    }, { threshold: 0.08 });
-    document.querySelectorAll(".reveal").forEach(function (el) { el.classList.add("will-reveal"); observer.observe(el); });
-  }
-}());
 
+  if("IntersectionObserver" in window){
+    const observer=new IntersectionObserver(entries=>{
+      entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add("is-visible");observer.unobserve(entry.target);}});
+    },{threshold:.06});
+    document.querySelectorAll(".reveal").forEach(el=>{el.classList.add("will-reveal");observer.observe(el);});
+  }
+  const copy=document.querySelector(".copy-email");
+  if(copy&&navigator.clipboard&&window.isSecureContext){
+    copy.hidden=false;copy.addEventListener("click",async()=>{
+      try{
+        await navigator.clipboard.writeText("zamyilton@ileotaku.com");copy.textContent="Email copied ✓";
+        document.getElementById("copy-status").textContent="Email address copied to clipboard.";
+        window.setTimeout(()=>{copy.textContent="Copy email ⧉";},2400);
+      }catch(_){document.getElementById("copy-status").textContent="Use the email link to get in touch.";}
+    });
+  }
+  document.getElementById("year").textContent=String(new Date().getFullYear());
+  window.addEventListener("pagehide",event=>{if(event.persisted)scene?.setPaused(true);else scene?.dispose();});
+  window.addEventListener("pageshow",()=>scene?.setPaused(scenePaused()));
+  applyMotion();
+  const allowScene=()=>{sceneAllowed=true;ensureScene();};
+  if("requestIdleCallback" in window)window.requestIdleCallback(allowScene,{timeout:1500});else window.setTimeout(allowScene,500);
+})();

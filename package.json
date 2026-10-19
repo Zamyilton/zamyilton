@@ -1,0 +1,15 @@
+{
+  "name": "zamyilton-portfolio",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check dist/app.js && node --check dist/scene.mjs && node --check dist/motion.mjs",
+    "test": "node --experimental-vm-modules --test tests/portfolio.test.mjs"
+  },
+  "devDependencies": {
+    "linkedom": "0.18.12",
+    "postcss": "8.5.6"
+  }
+}
+

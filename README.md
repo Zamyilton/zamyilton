@@ -1,38 +1,33 @@
 # Zamyilton Portfolio
 
-A static portfolio for Isaac Gold, styled in black, purple and gold. Includes four project stories, keyboard-accessible project tabs, project detail dialogs, a mobile menu, reduced-motion support, contact links, local fonts and the CV.
+Isaac Gold's portfolio, deployed at https://zamyilton.vercel.app/.
 
-## Host on Vercel
+## Source
 
-1. Unzip this folder and put its contents in a GitHub repository.
-2. In Vercel, choose Add New Project and import that repository.
-3. Select the Other framework preset. Leave the build command empty and set the output directory to dist. The included vercel.json already supplies these settings.
-4. Deploy. To use zamyilton.vercel.app, use zamyilton as the project name if it is available in your account. Vercel controls hostname availability.
-5. If Vercel assigns another address, update the canonical URL, og:url, dist/robots.txt and dist/sitemap.xml to match it.
-6. After the portfolio is live, remove the “in development” label beside its URL in the CV and replace dist/assets/Isaac_Gold_CV.pdf with that updated PDF.
+- dist/index.html: semantic page, project chapters, links and dialog shell.
+- dist/styles.css: responsive art direction and layered interface studies.
+- dist/app.js: navigation, project stories, scroll motion, copy email and motion controls.
+- dist/motion.mjs: bounded motion inputs and device rendering budgets.
+- dist/scene.mjs: procedural Three.js Z sculpture, lighting, orbit details and lifecycle.
+- dist/vendor/: pinned Three.js 0.180.0 modules and MIT license.
+- dist/assets/: locally hosted Rubik fonts, license, favicon and downloadable CV.
 
-No environment variables, API keys, database or dependency installation are required.
+The project artwork is clearly labeled as interface or visual studies. It does not claim to be product screenshots. Project descriptions distinguish beta products, development work and prototypes.
 
-## Edit the content
+## Run checks
 
-- dist/index.html: page content and project summaries.
-- dist/app.js: extended project stories and interactive behavior.
-- dist/styles.css: responsive layout, typography and colors.
-- dist/assets/Isaac_Gold_CV.pdf: downloadable CV.
-- dist/assets/fonts-OFL.txt: license for the locally bundled Rubik fonts.
+Use Node.js 22 or later:
 
-To open a local preview when Python is available, run:
-    python3 -m http.server 8080 --directory dist
+    npm ci
+    npm run check
+    npm test
 
-Then visit http://localhost:8080.
+Tests cover links, assets, CSS parsing, scene geometry, mobile rendering budgets, reduced-motion preference, navigation, project stories and email copy. A real browser/GPU still needs to verify the visual rendering.
 
-## Content and behavior
+## Deployment
 
-Zuwachs and IleOtaku link to their public domains. Eternal Nexus Echoes and VALEN use contact links for walkthrough requests; no unverified public demo or APK URL is invented. The contact action opens email, and copy-email uses the browser clipboard on secure origins. There is no form claiming to send messages without a backend.
+Vercel uses the repository root and serves the committed dist directory. No framework build or runtime backend is required; vercel.json selects the Other/static setup. Keep vercel.json and dist at the repository root.
 
-Project artwork is a set of CSS and SVG visual identifiers, not product screenshots. Descriptions mark developing products and prototypes accordingly.
+Three.js is hosted locally; no CDN or API keys are needed. Its module loads after the core page is ready. The scene uses capped resolution and a reduced frame budget on smaller devices, pauses outside the hero and when the tab is hidden, and retains static artwork when 3D is unavailable. Reduced-motion preferences and the visitor's motion toggle are respected.
 
-## Verification
-
-JavaScript syntax and static document, link, asset and content checks were run. An interactive browser preview was unavailable in the build environment; review desktop and mobile layouts after deployment, including the project tabs, dialogs, menu and CV link.
-
+After any domain change, update the canonical URL, Open Graph URL, robots.txt and sitemap.xml. Keep the downloadable CV current.
