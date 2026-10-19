@@ -1,3 +1,36 @@
+<img align="right" src="https://zamyilton.vercel.app/assets/zamyilton-dragon-gold-purple.png" alt="Zamyilton dragon icon" width="100" />
+
+# Isaac Gold
+
+Frontend developer in Lagos, Nigeria. I build responsive interfaces with React, Next.js, TypeScript and Firebase.
+
+**Open to hybrid frontend opportunities in Lagos. Available immediately.**
+
+[Portfolio](https://zamyilton.vercel.app/) · [CV](https://zamyilton.vercel.app/assets/Isaac_Gold_CV.pdf?v=20261020) · [One-column CV](https://zamyilton.vercel.app/assets/Isaac_Gold_Frontend_ATS_CV.pdf?v=20261020) · [Email](mailto:zamyilton@ileotaku.com)
+
+## Selected work
+
+| Project | My work | Status and links |
+| --- | --- | --- |
+| **IleOtaku** | Reader, creator and admin interfaces, authentication, publishing, messaging and responsive UI. React, Next.js, TypeScript and Firebase. | Beta product. [Website](https://ileotaku.com) · [Case study](https://zamyilton.vercel.app/#ileotaku) |
+| **Zuwachs Travel and Tours** | Business website presenting travel services, consultation options and an enquiry flow. | [Live website](https://zuwachstravel.com) · [Case study](https://zamyilton.vercel.app/#zuwachs) |
+| **Eternal Nexus Echoes** | React/Three.js browser game client with character creation, gameplay and real-time social interfaces. | In development. [Case study](https://zamyilton.vercel.app/#nexus) |
+| **VALEN** | Android task, memory and settings screens with speech interaction. Kotlin and Jetpack Compose. | Prototype. [Case study](https://zamyilton.vercel.app/#valen) |
+| **Personal portfolio** | Responsive presentation, project dialogs, scroll motion and a Three.js identity scene, developed with AI assistance. Automated interaction and geometry checks. | [Website](https://zamyilton.vercel.app/) · [Public source](https://github.com/Zamyilton/zamyilton) |
+
+## Technical focus
+
+React, Next.js, JavaScript, TypeScript, HTML, CSS, Tailwind CSS, Zustand, Firebase Authentication, Firestore, Git and GitHub. My work also includes Three.js and Kotlin/Jetpack Compose.
+
+## Background
+
+BSc Computer Science, ESM Bènin University (2025), Second Class Upper, CGPA 3.99/5.00. HTML, CSS and JavaScript training at EkoBits ICT Academy, Lekki (2022). Student Union President from 100 level through final year across Heim Weldios University and ESM Bènin University.
+
+---
+
+<details>
+<summary>Portfolio source, local checks and deployment</summary>
+
 # Zamyilton Portfolio
 
 Isaac Gold's portfolio, deployed at https://zamyilton.vercel.app/.
@@ -42,3 +75,5 @@ Vercel uses the repository root and serves the committed dist directory. No fram
 Three.js is hosted locally; no CDN or API keys are needed. Its module loads after the core page is ready. The scene uses capped resolution and a reduced frame budget on smaller devices, pauses outside the hero and when the tab is hidden, and retains static artwork when 3D is unavailable. Reduced-motion preferences and the visitor's motion toggle are respected.
 
 After any domain change, update the canonical URL, Open Graph URL, robots.txt and sitemap.xml. Keep the downloadable CV current.
+
+</details>

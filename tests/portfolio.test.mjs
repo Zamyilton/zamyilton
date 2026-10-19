@@ -36,7 +36,7 @@ test("all local links and chapter controls resolve without JavaScript",async()=>
   assert.equal(document.querySelectorAll(".project-atlas a").length,4);
   assert.equal(document.querySelectorAll(".artwork-trigger").length,4);
   for(const button of document.querySelectorAll(".artwork-trigger"))assert.ok(!button.closest('[aria-hidden="true"]'));
-  assert.equal(document.querySelectorAll('a[href="assets/Isaac_Gold_CV.pdf"]').length,2);
+  assert.equal(document.querySelectorAll('a[href^="assets/Isaac_Gold_CV.pdf"]').length,2);
   assert.ok(document.querySelector("noscript"));
 });
 
