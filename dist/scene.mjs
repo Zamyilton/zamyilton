@@ -1,17 +1,27 @@
 import * as THREE from "./vendor/three.module.min.mjs";
 import { clamp, deviceProfile } from "./motion.mjs";
+import { dragonOutline, dragonEye } from "./identity.mjs";
 
-export function buildZGeometry() {
+function drawPath(target, commands) {
+  const point=(x,y)=>[(x-135)/100,(135-y)/100];
+  commands.forEach(([command,...values])=>{
+    if(command==="M")target.moveTo(...point(...values));
+    else if(command==="L")target.lineTo(...point(...values));
+    else if(command==="C")target.bezierCurveTo(...point(values[0],values[1]),...point(values[2],values[3]),...point(values[4],values[5]));
+    else target.closePath();
+  });
+}
+
+export function buildDragonGeometry() {
   const shape = new THREE.Shape();
-  shape.moveTo(-1.12, 1.13);
-  [[1.12,1.13],[1.12,.68],[-.3,-.66],[1.12,-.66],[1.12,-1.13],[-1.12,-1.13],[-1.12,-.68],[.3,.66],[-1.12,.66]].forEach(([x,y])=>shape.lineTo(x,y));
-  shape.closePath();
-  const geometry = new THREE.ExtrudeGeometry(shape, {depth:.31,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.065,bevelThickness:.065,curveSegments:8});
+  drawPath(shape,dragonOutline);
+  const eye=new THREE.Path();drawPath(eye,dragonEye);shape.holes.push(eye);
+  const geometry = new THREE.ExtrudeGeometry(shape, {depth:.24,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.012,bevelThickness:.026,curveSegments:16});
   geometry.center();
   return geometry;
 }
 
-export function startScene({canvas, host, observeTarget, initialMotion = true}) {
+export function startScene({canvas, host, observeTarget, initialMotion = true, initialFinish = "gold"}) {
   if (!canvas || !host) throw new Error("Scene requires a canvas and host");
   const profile = deviceProfile(window.innerWidth, window.devicePixelRatio || 1, navigator.hardwareConcurrency || 8);
   const renderer = new THREE.WebGLRenderer({canvas,alpha:true,antialias:!profile.light,powerPreference:"low-power",stencil:false});
@@ -22,7 +32,7 @@ export function startScene({canvas, host, observeTarget, initialMotion = true}) 
   renderer.toneMappingExposure = 1.15;
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32,1,.1,40);
-  camera.position.set(0,.12,9.2);
+  camera.position.set(0,.12,8.7);
   const sculpture = new THREE.Group();
   scene.add(sculpture);
 
@@ -45,17 +55,20 @@ export function startScene({canvas, host, observeTarget, initialMotion = true}) 
   room.traverse(o=>{o.geometry?.dispose();if(o.material)o.material.dispose();});
   pmrem.dispose();
 
-  const face = new THREE.MeshPhysicalMaterial({color:0xb08bdc,metalness:.72,roughness:.24,clearcoat:1,clearcoatRoughness:.15,envMapIntensity:1.2});
-  const edge = new THREE.MeshStandardMaterial({color:0xd7b27c,metalness:.86,roughness:.22,envMapIntensity:1.3});
-  const z = new THREE.Mesh(buildZGeometry(),[face,edge]);
+  const face = new THREE.MeshPhysicalMaterial({color:0xe8c88d,metalness:.78,roughness:.22,clearcoat:1,clearcoatRoughness:.13,envMapIntensity:1.4});
+  const edge = new THREE.MeshStandardMaterial({color:0x84603d,metalness:.9,roughness:.21,envMapIntensity:1.5});
+  const z = new THREE.Mesh(buildDragonGeometry(),[face,edge]);
   sculpture.add(z);
+  const echoMaterial=new THREE.MeshBasicMaterial({color:0xb99be8,wireframe:true,transparent:true,opacity:.035,depthWrite:false});
+  const echo=new THREE.Mesh(z.geometry,echoMaterial);
+  echo.position.z=-.32;sculpture.add(echo);
   const orbitGroup = new THREE.Group();
   sculpture.add(orbitGroup);
   const ringMaterial = new THREE.MeshStandardMaterial({color:0xa88ac7,metalness:.55,roughness:.35});
   const goldMaterial = new THREE.MeshStandardMaterial({color:0xdac18f,metalness:.75,roughness:.3});
-  const ringA = new THREE.Mesh(new THREE.TorusGeometry(1.9,.012,6,100),goldMaterial);
+  const ringA = new THREE.Mesh(new THREE.TorusGeometry(1.9,.009,6,100,Math.PI*1.55),goldMaterial);
   ringA.rotation.set(1.05,.3,-.4);orbitGroup.add(ringA);
-  const ringB = new THREE.Mesh(new THREE.TorusGeometry(2.12,.008,6,100),ringMaterial);
+  const ringB = new THREE.Mesh(new THREE.TorusGeometry(2.12,.006,6,100,Math.PI*1.2),ringMaterial);
   ringB.rotation.set(-.6,1.1,.6);orbitGroup.add(ringB);
   const nodes=[];
   const nodeGeometry=new THREE.IcosahedronGeometry(.055,0);
@@ -78,13 +91,17 @@ export function startScene({canvas, host, observeTarget, initialMotion = true}) 
   const key=new THREE.DirectionalLight(0xffefdb,4.2);key.position.set(-4,5,5);scene.add(key);
   const fill=new THREE.DirectionalLight(0xaf82e3,3);fill.position.set(4,1,3);scene.add(fill);
 
+  const finishes={gold:[0xe8c88d,0x84603d],amethyst:[0xb594e5,0x63408f]};
+  let finish=initialFinish in finishes?initialFinish:"gold";
+  const targetFace=new THREE.Color(finishes[finish][0]),targetEdge=new THREE.Color(finishes[finish][1]);
+  face.color.copy(targetFace);edge.color.copy(targetEdge);
   let disposed=false, lost=false, inView=true, enabled=initialMotion, frameId=0, lastFrame=0, start=performance.now();
   const input={progress:0,x:0,y:0},smooth={progress:0,x:0,y:0};
   function size(){
     if(disposed)return;
     const rect=host.getBoundingClientRect(),width=Math.max(1,rect.width),height=Math.max(1,rect.height);
     camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height,false);
-    camera.position.z=width<420?10:9.2;
+    camera.position.z=width<420?9.4:8.7;
     draw(performance.now());
   }
   function draw(now){
@@ -93,9 +110,12 @@ export function startScene({canvas, host, observeTarget, initialMotion = true}) 
     smooth.progress+=(input.progress-smooth.progress)*.07;
     smooth.x+=(input.x-smooth.x)*.06;smooth.y+=(input.y-smooth.y)*.06;
     const p=smooth.progress;
-    z.rotation.set(-.12+smooth.y*.1+p*.28,-.45+smooth.x*.24+p*1.4,-.13+Math.sin(t*.24)*.04+p*.4);
+    z.rotation.set(-.08+smooth.y*.13+p*.24,-.23+smooth.x*.3+p*.9,-.1+Math.sin(t*.24)*.035+p*.22);
+    echo.rotation.copy(z.rotation);echo.position.z=-.32-p*.65;
+    echo.scale.setScalar(1.025+p*.08);echoMaterial.opacity=.035+p*.065;
+    face.color.lerp(targetFace,.075);edge.color.lerp(targetEdge,.075);
     sculpture.position.set(.1+smooth.x*.05,-.05+Math.sin(t*.65)*.07-p*.18,0);
-    sculpture.scale.setScalar(1.2-p*.12);
+    sculpture.scale.setScalar(1.38-p*.12);
     orbitGroup.rotation.set(Math.sin(t*.12)*.1,.1+t*.045+p*.6,-.12+p*.35);
     dust.rotation.y=t*.014;
     nodes.forEach((node,i)=>node.scale.setScalar(1+Math.sin(t+i)*.12));
@@ -123,6 +143,11 @@ export function startScene({canvas, host, observeTarget, initialMotion = true}) 
   size();schedule();
   return {
     setInput(next){input.progress=clamp(next.progress??input.progress);input.x=clamp(next.x??input.x,-1,1);input.y=clamp(next.y??input.y,-1,1);},
+    setFinish(next){
+      if(!(next in finishes))return;
+      finish=next;targetFace.set(finishes[finish][0]);targetEdge.set(finishes[finish][1]);
+      if(!active()){face.color.copy(targetFace);edge.color.copy(targetEdge);draw(performance.now());}
+    },
     setPaused(paused){enabled=!paused;schedule();},
     dispose(){
       if(disposed)return;disposed=true;if(frameId)cancelAnimationFrame(frameId);

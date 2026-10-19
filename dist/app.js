@@ -70,6 +70,16 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
   const marquees = Array.from(document.querySelectorAll("[data-marquee]"));
   const chapters = Array.from(document.querySelectorAll("[data-chapter]"));
   const railLinks = Array.from(document.querySelectorAll("[data-rail]"));
+  const finishButtons = Array.from(document.querySelectorAll(".finish-option"));
+  let sculptureFinish = "gold";
+  const finishPanel=document.querySelector(".hero-finish");
+  if(finishPanel)finishPanel.hidden=false;
+  finishButtons.forEach(button=>button.addEventListener("click",()=>{
+    sculptureFinish=button.dataset.finish;
+    root.dataset.finish=sculptureFinish;
+    finishButtons.forEach(option=>option.setAttribute("aria-pressed",String(option===button)));
+    scene?.setFinish(sculptureFinish);
+  }));
   function scenePaused() { return !motionEnabled || !!dialog?.hasAttribute("open"); }
   function applyMotion() {
     root.dataset.motion = motionEnabled ? "on" : "off";
@@ -84,6 +94,7 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
       marquees.forEach(el=>el.style.setProperty("--word-shift","0px"));
       document.querySelectorAll(".magnetic").forEach(el=>{el.style.setProperty("--mx","0px");el.style.setProperty("--my","0px");});
       document.querySelectorAll("[data-tilt]").forEach(el=>{el.style.setProperty("--rx","0deg");el.style.setProperty("--ry","0deg");});
+      heroArt?.style.setProperty("--pointer-x","50%");heroArt?.style.setProperty("--pointer-y","50%");
     }
     scene?.setPaused(scenePaused());
     if(motionEnabled)ensureScene();
@@ -95,7 +106,7 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
     if(rect&&(rect.bottom<0||rect.top>window.innerHeight))return;
     sceneLoading=true;
     import("./scene.mjs").then(({startScene})=>{
-      scene=startScene({canvas:document.getElementById("hero-canvas"),host:sceneHost,observeTarget:hero,initialMotion:!scenePaused()});
+      scene=startScene({canvas:document.getElementById("hero-canvas"),host:sceneHost,observeTarget:hero,initialMotion:!scenePaused(),initialFinish:sculptureFinish});
       scene.setInput(sceneInput);
       scene.setPaused(scenePaused());
     }).catch(()=>{sceneFailed=true;if(sceneHost)sceneHost.dataset.scene="fallback";}).finally(()=>{sceneLoading=false;});
@@ -119,13 +130,30 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
     document.addEventListener("keydown",event=>{if(event.key==="Escape"&&nav.classList.contains("open")){closeNav();toggle.focus();}});
   }
 
-  let previousFocus=null;
+  let previousFocus=null,currentStudy=null;
+  const studyOrder=Object.keys(projectData);
   function renderStudy(id){
     const data=projectData[id];if(!data||!dialog)return;
-    previousFocus=document.activeElement;
+    const alreadyOpen=dialog.hasAttribute("open");
+    if(!alreadyOpen)previousFocus=document.activeElement;
+    currentStudy=id;
     document.getElementById("study-title").textContent=data.title;
     document.getElementById("study-kind").textContent=data.kind;
     document.getElementById("study-summary").textContent=data.summary;
+    const studyArt=document.getElementById("study-art"),source=document.querySelector('[data-chapter="'+id+'"] .showcase');
+    studyArt.replaceChildren();
+    if(source){
+      const artwork=source.cloneNode(true);
+      artwork.removeAttribute("data-tilt");artwork.removeAttribute("style");
+      artwork.querySelectorAll("[data-depth]").forEach(el=>{el.removeAttribute("data-depth");el.removeAttribute("style");el.classList.remove("parallax");});
+      studyArt.appendChild(artwork);
+    }
+    const index=studyOrder.indexOf(id);
+    document.getElementById("study-position").textContent=String(index+1).padStart(2,"0")+" / 04";
+    document.querySelectorAll("[data-study-direction]").forEach(button=>{
+      const next=studyOrder[(index+Number(button.dataset.studyDirection)+studyOrder.length)%studyOrder.length];
+      button.setAttribute("aria-label",(Number(button.dataset.studyDirection)>0?"Next project: ":"Previous project: ")+projectData[next].title);
+    });
     const content=document.getElementById("study-content"),links=document.getElementById("study-links");
     content.replaceChildren();links.replaceChildren();
     data.blocks.forEach(([title,value])=>{
@@ -141,9 +169,10 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
       const a=document.createElement("a");a.textContent=label+" ↗";a.href=url;
       if(url.startsWith("https://")){a.target="_blank";a.rel="noopener noreferrer";}links.appendChild(a);
     });
-    if(typeof dialog.showModal==="function")dialog.showModal();else dialog.setAttribute("open","");
+    if(!alreadyOpen){if(typeof dialog.showModal==="function")dialog.showModal();else dialog.setAttribute("open","");}
     document.body.classList.add("modal-open");scene?.setPaused(true);
-    dialog.querySelector(".dialog-close").focus();
+    dialog.scrollTop=0;
+    if(alreadyOpen)document.getElementById("study-title").focus();else dialog.querySelector(".dialog-close").focus();
   }
   function afterClose(){document.body.classList.remove("modal-open");scene?.setPaused(scenePaused());previousFocus?.focus?.();}
   function closeStudy(){
@@ -151,6 +180,11 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
     if(typeof dialog.close==="function")dialog.close();else{dialog.removeAttribute("open");afterClose();}
   }
   document.querySelectorAll("[data-study]").forEach(button=>button.addEventListener("click",()=>renderStudy(button.dataset.study)));
+  document.querySelectorAll("[data-study-direction]").forEach(button=>button.addEventListener("click",()=>{
+    if(!currentStudy)return;
+    const index=studyOrder.indexOf(currentStudy),direction=Number(button.dataset.studyDirection);
+    renderStudy(studyOrder[(index+direction+studyOrder.length)%studyOrder.length]);
+  }));
   if(dialog){
     dialog.querySelector(".dialog-close").addEventListener("click",closeStudy);
     dialog.addEventListener("close",afterClose);
@@ -196,6 +230,7 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
     }
     let active=chapters[0]?.dataset.chapter;
     chapters.forEach(chapter=>{if(chapter.getBoundingClientRect().top<vh*.55)active=chapter.dataset.chapter;});
+    root.dataset.chapter=active;
     railLinks.forEach(link=>{if(link.dataset.rail===active)link.setAttribute("aria-current","true");else link.removeAttribute("aria-current");});
   }
   function requestUpdate(){if(!frame)frame=requestAnimationFrame(updateScroll);}
@@ -208,19 +243,22 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
       const r=heroArt.getBoundingClientRect();
       sceneInput.x=clamp((event.clientX-r.left)/Math.max(1,r.width)*2-1,-1,1);
       sceneInput.y=clamp(1-(event.clientY-r.top)/Math.max(1,r.height)*2,-1,1);
+      heroArt.style.setProperty("--pointer-x",((sceneInput.x+1)*50).toFixed(1)+"%");
+      heroArt.style.setProperty("--pointer-y",((1-sceneInput.y)*50).toFixed(1)+"%");
       scene?.setInput(sceneInput);
     },{passive:true});
-    heroArt.addEventListener("pointerleave",()=>{sceneInput.x=0;sceneInput.y=0;scene?.setInput(sceneInput);});
+    heroArt.addEventListener("pointerleave",()=>{sceneInput.x=0;sceneInput.y=0;heroArt.style.setProperty("--pointer-x","50%");heroArt.style.setProperty("--pointer-y","50%");scene?.setInput(sceneInput);});
   }
   const finePointer=window.matchMedia?.("(hover: hover) and (pointer: fine)").matches;
   if(finePointer){
-    document.querySelectorAll("[data-tilt]").forEach(el=>{
-      el.addEventListener("pointermove",event=>{
+    document.querySelectorAll(".chapter-visual").forEach(surface=>{
+      const el=surface.querySelector("[data-tilt]");if(!el)return;
+      surface.addEventListener("pointermove",event=>{
         if(!motionEnabled)return;
         const r=el.getBoundingClientRect(),x=(event.clientX-r.left)/Math.max(1,r.width)-.5,y=(event.clientY-r.top)/Math.max(1,r.height)-.5;
         el.style.setProperty("--rx",(-y*5).toFixed(2)+"deg");el.style.setProperty("--ry",(x*6).toFixed(2)+"deg");
       },{passive:true});
-      el.addEventListener("pointerleave",()=>{el.style.setProperty("--rx","0deg");el.style.setProperty("--ry","0deg");});
+      surface.addEventListener("pointerleave",()=>{el.style.setProperty("--rx","0deg");el.style.setProperty("--ry","0deg");});
     });
     document.querySelectorAll(".magnetic").forEach(el=>{
       el.addEventListener("pointermove",event=>{

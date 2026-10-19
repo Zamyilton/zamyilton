@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 import { parseHTML } from "linkedom";
 import postcss from "postcss";
-import { buildZGeometry } from "../dist/scene.mjs";
+import * as THREE from "../dist/vendor/three.module.min.mjs";
+import { buildDragonGeometry } from "../dist/scene.mjs";
+import { identitySVG } from "../dist/identity.mjs";
 import { deviceProfile, heroProgress, parallaxOffset } from "../dist/motion.mjs";
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),".."),dist=path.join(root,"dist");
@@ -29,13 +31,16 @@ test("all local links and chapter controls resolve without JavaScript",async()=>
   }
   assert.equal(document.querySelectorAll("[data-chapter]").length,4);
   for(const a of document.querySelectorAll('[target="_blank"]'))assert.ok(a.getAttribute("rel").includes("noopener"));
-  assert.ok(document.querySelector(".hero-fallback svg"),"static visual fallback");
+  assert.ok(document.querySelector('.hero-fallback img[src="assets/zamyilton-dragon.svg"]'),"static dragon fallback");
+  assert.equal(document.querySelectorAll(".project-atlas a").length,4);
+  assert.equal(document.querySelectorAll(".artwork-trigger").length,4);
+  for(const button of document.querySelectorAll(".artwork-trigger"))assert.ok(!button.closest('[aria-hidden="true"]'));
   assert.equal(document.querySelectorAll('a[href="assets/Isaac_Gold_CV.pdf"]').length,2);
   assert.ok(document.querySelector("noscript"));
 });
 
-test("stylesheet is valid and motion can be disabled",async()=>{
-  const css=await fs.readFile(path.join(dist,"styles.css"),"utf8");
+test("stylesheets are valid and motion can be disabled",async()=>{
+  const css=(await Promise.all(["styles.css","experience.css"].map(file=>fs.readFile(path.join(dist,file),"utf8")))).join("\n");
   const ast=postcss.parse(css);
   assert.ok(ast.nodes.length>20);
   for(const hex of css.match(/#[a-f0-9]+\b/gi)||[])assert.ok([3,4,6,8].includes(hex.length-1),"Invalid color "+hex);
@@ -45,11 +50,11 @@ test("stylesheet is valid and motion can be disabled",async()=>{
   assert.ok(css.includes("max-width:850px"));
 });
 
-test("3D monogram is finite, volumetric, and contains front and edge faces",()=>{
-  const geometry=buildZGeometry();geometry.computeBoundingBox();
+test("dragon sculpture is finite, volumetric, and has an open eye",()=>{
+  const geometry=buildDragonGeometry();geometry.computeBoundingBox();
   const b=geometry.boundingBox;
   assert.ok(b.max.x-b.min.x>2&&b.max.x-b.min.x<2.6);
-  assert.ok(b.max.z-b.min.z>.3&&b.max.z-b.min.z<.6);
+  assert.ok(b.max.z-b.min.z>.2&&b.max.z-b.min.z<.4);
   const positions=geometry.getAttribute("position"),normals=geometry.getAttribute("normal");
   assert.ok(positions.count>60);
   assert.ok(Array.from(positions.array).every(Number.isFinite));
@@ -60,7 +65,23 @@ test("3D monogram is finite, volumetric, and contains front and edge faces",()=>
     volume+=(p[i]*(p[i+4]*p[i+8]-p[i+5]*p[i+7])+p[i+1]*(p[i+5]*p[i+6]-p[i+3]*p[i+8])+p[i+2]*(p[i+3]*p[i+7]-p[i+4]*p[i+6]))/6;
   }
   assert.ok(Math.abs(volume)>.3,"closed extrusion has physical volume");
+  const material=new THREE.MeshBasicMaterial({side:THREE.DoubleSide});
+  const mesh=new THREE.Mesh(geometry,material),ray=new THREE.Raycaster();
+  mesh.updateMatrixWorld();
+  ray.set(new THREE.Vector3(.28,-.02,3),new THREE.Vector3(0,0,-1));
+  assert.ok(ray.intersectObject(mesh).length>0,"body has solid front and back faces");
+  ray.set(new THREE.Vector3(.9033,.475,3),new THREE.Vector3(0,0,-1));
+  assert.equal(ray.intersectObject(mesh).length,0,"eye remains a cutout through the extrusion");
+  material.dispose();
   geometry.dispose();
+});
+
+test("scalable icons stay synchronized with the sculpture source",async()=>{
+  assert.equal(await fs.readFile(path.join(dist,"assets/zamyilton-dragon.svg"),"utf8"),identitySVG());
+  assert.equal(await fs.readFile(path.join(dist,"assets/zamyilton-dragon-dark.svg"),"utf8"),identitySVG({dark:true}));
+  assert.equal(await fs.readFile(path.join(dist,"assets/favicon.svg"),"utf8"),identitySVG({background:true}));
+  const cover=await fs.readFile(path.join(dist,"assets/social-cover.png"));
+  assert.equal(cover.readUInt32BE(16),1200);assert.equal(cover.readUInt32BE(20),630);
 });
 
 test("scroll inputs and mobile rendering budgets stay bounded",()=>{
@@ -119,10 +140,40 @@ test("each project story opens with the correct content and closes cleanly",asyn
     assert.ok(dialog.hasAttribute("open"));
     assert.equal(document.getElementById("study-title").textContent,title);
     assert.ok(document.getElementById("study-content").textContent.length>100);
+    assert.ok(document.querySelector("#study-art .showcase"));
     assert.ok(document.body.classList.contains("modal-open"));
     key(dialog,"Escape");
     assert.ok(!dialog.hasAttribute("open"));assert.ok(!document.body.classList.contains("modal-open"));
   }
+});
+
+test("artwork opens stories and project navigation wraps without losing return focus",async()=>{
+  const {document,key}=await environment();
+  const trigger=document.querySelector('.artwork-trigger[data-study="ileotaku"]');
+  trigger.focus();trigger.click();
+  const previous=document.querySelector('[data-study-direction="-1"]'),next=document.querySelector('[data-study-direction="1"]');
+  previous.click();
+  assert.equal(document.getElementById("study-title").textContent,"Zuwachs Travel and Tours");
+  assert.equal(document.getElementById("study-position").textContent,"04 / 04");
+  next.click();
+  assert.equal(document.getElementById("study-title").textContent,"IleOtaku");
+  next.click();
+  assert.equal(document.getElementById("study-title").textContent,"Eternal Nexus Echoes");
+  assert.equal(document.getElementById("study-art").children.length,1,"previous artwork is replaced");
+  assert.equal(document.querySelectorAll("#study-art [data-depth]").length,0,"clones have no active parallax controllers");
+  key(document.querySelector("dialog"),"Escape");
+  assert.equal(document.activeElement,trigger,"focus returns to the original artwork trigger");
+});
+
+test("finish controls also update the static artwork with reduced motion",async()=>{
+  const {document}=await environment(true);
+  const gold=document.querySelector('.finish-option[data-finish="gold"]'),purple=document.querySelector('.finish-option[data-finish="amethyst"]');
+  assert.equal(document.querySelector(".hero-finish").hidden,false);
+  purple.click();
+  assert.equal(document.documentElement.dataset.finish,"amethyst");
+  assert.equal(purple.getAttribute("aria-pressed"),"true");assert.equal(gold.getAttribute("aria-pressed"),"false");
+  assert.equal(document.documentElement.dataset.motion,"off");
+  gold.click();assert.equal(document.documentElement.dataset.finish,"gold");
 });
 
 test("reduced motion is respected, manual choice is saved, and email copy works",async()=>{

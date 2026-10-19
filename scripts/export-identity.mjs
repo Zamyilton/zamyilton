@@ -1,0 +1,17 @@
+import { writeFile } from "node:fs/promises";
+import { identitySVG, dragonPath } from "../dist/identity.mjs";
+
+await writeFile(new URL("../dist/assets/zamyilton-dragon.svg",import.meta.url),identitySVG());
+await writeFile(new URL("../dist/assets/zamyilton-dragon-dark.svg",import.meta.url),identitySVG({dark:true}));
+await writeFile(new URL("../dist/assets/favicon.svg",import.meta.url),identitySVG({background:true}));
+await writeFile(new URL("../dist/assets/social-cover.svg",import.meta.url),`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<defs><radialGradient id="glow"><stop stop-color="#5d397b" stop-opacity=".45"/><stop offset="1" stop-color="#101014" stop-opacity="0"/></radialGradient></defs>
+<rect width="1200" height="630" fill="#101014"/><ellipse cx="960" cy="310" rx="500" ry="420" fill="url(#glow)"/>
+<g stroke="#b99be8" opacity=".15" fill="none"><circle cx="966" cy="308" r="218"/><circle cx="966" cy="308" r="229" stroke-dasharray="1 14" stroke-width="3"/><path d="M70 114h1060M70 494h1060"/></g>
+<text x="70" y="76" fill="#e8c88d" font-family="Rubik,sans-serif" font-size="15" letter-spacing="4">ZAMYILTON / ISAAC GOLD</text>
+<text x="65" y="256" fill="#f3eee7" font-family="Rubik,sans-serif" font-size="100" font-weight="700" letter-spacing="-6">I build</text>
+<text x="65" y="356" fill="#bb9be8" font-family="Rubik,sans-serif" font-size="78" font-style="italic" font-weight="700" letter-spacing="-5">what I imagine.</text>
+<path d="${dragonPath}" transform="translate(785 117) scale(1.33)" fill="#e8c88d" fill-rule="evenodd"/>
+<text x="70" y="546" fill="#bca9c9" font-family="Rubik,sans-serif" font-size="13" letter-spacing="3">FRONTEND DEVELOPER</text>
+<text x="70" y="576" fill="#7f708a" font-family="Rubik,sans-serif" font-size="11" letter-spacing="2">LAGOS, NIGERIA</text>
+<text x="1130" y="576" text-anchor="end" fill="#e8c88d" font-family="Rubik,sans-serif" font-size="15">zamyilton.vercel.app</text></svg>\n`);
