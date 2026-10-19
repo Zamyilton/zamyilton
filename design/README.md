@@ -1,7 +1,7 @@
 # Zamyilton dragon identity
 
-The mark combines a dragon's swept wing, horned head, diagonal body and pointed tail into a recognizable Z silhouette. Warm gold is the primary finish; amethyst is the interactive hero variation.
+The user selected the first, detailed dragon design. The final artwork combines metallic gold on the face, horns, wing edges and tail with amethyst purple through the wings and body.
 
-`dragon-concept.png` is the original image-generated concept. The production icon is a clean vector interpretation, drawn for consistent contours, an open eye and use at small sizes. Production paths live in `dist/identity.mjs`, shared by the exported SVGs and the extruded Three.js geometry.
+`dragon-concept.png` is the selected first concept. `dist/assets/zamyilton-dragon-gold-purple.png` is its image-generated recolor, retaining the detailed silhouette and transparency. That exact artwork is used in the navigation, hero, favicon, page details and social preview. It also textures the Three.js sculpture. `dist/identity.mjs` contains its sampled alpha contour, used for the sculpture's volume and supporting SVG silhouettes; it does not replace the visible full-color PNG.
 
-Generation brief: a single original dragon icon whose silhouette reads Z; a strong upper wing, diagonal serpentine body and broad lower tail; restrained negative space; gold on transparency; no wordmark, border, badge or surrounding typography.
+Edit brief: recolor the exact first ornate dragon to metallic gold and royal amethyst purple; preserve its silhouette, wing shapes, horns, face, flowing fins, curved body, negative spaces and tail. Keep actual transparency and omit text, badges, borders and extra objects. Built-in image generation was used for the edit.

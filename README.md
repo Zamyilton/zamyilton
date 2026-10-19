@@ -9,11 +9,12 @@ Isaac Gold's portfolio, deployed at https://zamyilton.vercel.app/.
 - dist/experience.css: dragon identity, project atlas, sculpture controls and visual case studies.
 - dist/app.js: navigation, project stories, scroll motion, finish selection, copy email and motion controls.
 - dist/motion.mjs: bounded motion inputs and device rendering budgets.
-- dist/identity.mjs: shared dragon curves for the vector icon and 3D sculpture.
-- dist/scene.mjs: extruded Three.js dragon, gold/amethyst materials, lighting, orbit details and lifecycle.
+- dist/identity.mjs: the selected first dragon's alpha contours and image asset reference.
+- dist/scene.mjs: extruded Three.js dragon with the approved gold/purple image texture, lighting, orbit details and lifecycle.
 - dist/vendor/: pinned Three.js 0.180.0 modules and MIT license.
 - dist/assets/: locally hosted Rubik fonts, license, scalable dragon icons, social preview and downloadable CV.
-- scripts/export-identity.mjs: regenerate the SVG identity assets from their shared source.
+- scripts/export-identity.mjs: regenerate the supporting SVG silhouettes and social preview source.
+- scripts/trace-identity.py: read the approved PNG's alpha contour as 3D mesh data without modifying its pixels.
 - design/: original generated concept and identity notes.
 
 The project artwork is clearly labeled as interface or visual studies. It does not claim to be product screenshots. Project descriptions distinguish beta products, development work and prototypes.
@@ -26,13 +27,13 @@ Use Node.js 22 or later:
     npm run check
     npm test
 
-Tests cover links, assets, CSS parsing, scene geometry and the eye cutout, synchronized vector assets, mobile rendering budgets, reduced-motion preference, navigation, visual project stories, return focus, finish controls and email copy. A real browser/GPU still needs to verify the visual rendering.
+Tests cover links, assets, CSS parsing, scene geometry and its negative space, texture coordinates, synchronized identity assets, mobile rendering budgets, reduced-motion preference, navigation, visual project stories, return focus, finish controls and email copy. A real browser/GPU still needs to verify the visual rendering.
 
 ## Identity assets
 
-The final icon is a dragon whose wing, diagonal body and tail form a Z. It contains no typography. The navigation, favicon, page details, social preview and 3D hero share the same shape. The standalone transparent SVG is `dist/assets/zamyilton-dragon.svg`; a dark variant is also included. The original generated image is a design reference rather than a runtime dependency.
+The final icon is the user's selected first detailed dragon, recolored gold and purple. It contains no typography. The navigation, favicon, page details, social preview and 3D hero use the exact transparent PNG at `dist/assets/zamyilton-dragon-gold-purple.png`. Supporting SVG silhouettes and the extruded mesh follow that image's alpha contour. Both hero lighting modes retain the two-color artwork.
 
-Run `node scripts/export-identity.mjs` after changing the shared curves. The social preview SVG uses Rubik; export it to the committed 1200 × 630 PNG with a vector renderer that has the bundled Rubik fonts available.
+If the approved artwork changes, run `python scripts/trace-identity.py` (Pillow and NumPy required) and `node scripts/export-identity.mjs`. The social preview SVG uses Rubik and the logo PNG; export it to the committed 1200 × 630 PNG with a vector renderer that has the bundled Rubik fonts available.
 
 ## Deployment
 

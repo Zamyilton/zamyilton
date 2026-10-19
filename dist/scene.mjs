@@ -1,6 +1,6 @@
 import * as THREE from "./vendor/three.module.min.mjs";
 import { clamp, deviceProfile } from "./motion.mjs";
-import { dragonOutline, dragonEye } from "./identity.mjs";
+import { dragonOutline, dragonHoles, dragonAsset } from "./identity.mjs";
 
 function drawPath(target, commands) {
   const point=(x,y)=>[(x-135)/100,(135-y)/100];
@@ -15,8 +15,15 @@ function drawPath(target, commands) {
 export function buildDragonGeometry() {
   const shape = new THREE.Shape();
   drawPath(shape,dragonOutline);
-  const eye=new THREE.Path();drawPath(eye,dragonEye);shape.holes.push(eye);
-  const geometry = new THREE.ExtrudeGeometry(shape, {depth:.24,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.012,bevelThickness:.026,curveSegments:16});
+  dragonHoles.forEach(commands=>{const hole=new THREE.Path();drawPath(hole,commands);shape.holes.push(hole);});
+  const uv=(vertices,index)=>new THREE.Vector2((vertices[index*3]+1.35)/2.7,(vertices[index*3+1]+1.35)/2.7);
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth:.2,bevelEnabled:true,bevelSegments:2,steps:1,bevelSize:.0018,bevelThickness:.018,
+    UVGenerator:{
+      generateTopUV:(_geometry,vertices,a,b,c)=>[a,b,c].map(i=>uv(vertices,i)),
+      generateSideWallUV:(_geometry,vertices,a,b,c,d)=>[a,b,c,d].map(i=>uv(vertices,i))
+    }
+  });
   geometry.center();
   return geometry;
 }
@@ -35,6 +42,12 @@ export function startScene({canvas, host, observeTarget, initialMotion = true, i
   camera.position.set(0,.12,8.7);
   const sculpture = new THREE.Group();
   scene.add(sculpture);
+  let disposed=false, lost=false, assetReady=false, assetFailed=false, inView=true, enabled=initialMotion, frameId=0, lastFrame=0, start=performance.now();
+  const logoTexture=new THREE.TextureLoader().load(new URL(dragonAsset,import.meta.url).href,texture=>{
+    if(disposed){texture.dispose();return;}
+    texture.colorSpace=THREE.SRGBColorSpace;assetReady=true;draw(performance.now());
+  },undefined,()=>{assetFailed=true;host.classList.remove("has-webgl");schedule();});
+  logoTexture.colorSpace=THREE.SRGBColorSpace;
 
   const room = new THREE.Scene();
   room.background = new THREE.Color(0x25202d);
@@ -55,7 +68,7 @@ export function startScene({canvas, host, observeTarget, initialMotion = true, i
   room.traverse(o=>{o.geometry?.dispose();if(o.material)o.material.dispose();});
   pmrem.dispose();
 
-  const face = new THREE.MeshPhysicalMaterial({color:0xe8c88d,metalness:.78,roughness:.22,clearcoat:1,clearcoatRoughness:.13,envMapIntensity:1.4});
+  const face = new THREE.MeshPhysicalMaterial({color:0xffffff,map:logoTexture,alphaTest:.25,metalness:.28,roughness:.38,clearcoat:.45,clearcoatRoughness:.2,envMapIntensity:.7});
   const edge = new THREE.MeshStandardMaterial({color:0x84603d,metalness:.9,roughness:.21,envMapIntensity:1.5});
   const z = new THREE.Mesh(buildDragonGeometry(),[face,edge]);
   sculpture.add(z);
@@ -91,11 +104,10 @@ export function startScene({canvas, host, observeTarget, initialMotion = true, i
   const key=new THREE.DirectionalLight(0xffefdb,4.2);key.position.set(-4,5,5);scene.add(key);
   const fill=new THREE.DirectionalLight(0xaf82e3,3);fill.position.set(4,1,3);scene.add(fill);
 
-  const finishes={gold:[0xe8c88d,0x84603d],amethyst:[0xb594e5,0x63408f]};
+  const finishes={gold:[0xffffff,0xb68b44],amethyst:[0xe7d9ff,0x8050b5]};
   let finish=initialFinish in finishes?initialFinish:"gold";
   const targetFace=new THREE.Color(finishes[finish][0]),targetEdge=new THREE.Color(finishes[finish][1]);
   face.color.copy(targetFace);edge.color.copy(targetEdge);
-  let disposed=false, lost=false, inView=true, enabled=initialMotion, frameId=0, lastFrame=0, start=performance.now();
   const input={progress:0,x:0,y:0},smooth={progress:0,x:0,y:0};
   function size(){
     if(disposed)return;
@@ -121,9 +133,9 @@ export function startScene({canvas, host, observeTarget, initialMotion = true, i
     nodes.forEach((node,i)=>node.scale.setScalar(1+Math.sin(t+i)*.12));
     camera.position.x=smooth.x*.11;camera.position.y=.12+smooth.y*.08;camera.lookAt(0,0,0);
     renderer.render(scene,camera);
-    host.classList.add("has-webgl");
+    if(assetReady&&!assetFailed)host.classList.add("has-webgl");
   }
-  function active(){return !disposed&&!lost&&enabled&&inView&&!document.hidden;}
+  function active(){return !disposed&&!lost&&!assetFailed&&enabled&&inView&&!document.hidden;}
   function loop(now){
     frameId=0;
     if(!active())return;
@@ -155,7 +167,7 @@ export function startScene({canvas, host, observeTarget, initialMotion = true, i
       canvas.removeEventListener("webglcontextlost",onLost);canvas.removeEventListener("webglcontextrestored",onRestore);
       const geometries=new Set(),materials=new Set();
       scene.traverse(o=>{if(o.geometry)geometries.add(o.geometry);if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>materials.add(m));});
-      geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());environment.dispose();renderer.dispose();host.classList.remove("has-webgl");
+      geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());logoTexture.dispose();environment.dispose();renderer.dispose();host.classList.remove("has-webgl");
     }
   };
 }

@@ -31,7 +31,8 @@ test("all local links and chapter controls resolve without JavaScript",async()=>
   }
   assert.equal(document.querySelectorAll("[data-chapter]").length,4);
   for(const a of document.querySelectorAll('[target="_blank"]'))assert.ok(a.getAttribute("rel").includes("noopener"));
-  assert.ok(document.querySelector('.hero-fallback img[src="assets/zamyilton-dragon.svg"]'),"static dragon fallback");
+  assert.ok(document.querySelector('.hero-fallback img[src="assets/zamyilton-dragon-gold-purple.png"]'),"approved first dragon fallback");
+  for(const image of document.querySelectorAll(".brand-icon,.hero-fallback img,.contact-star img,.footer-mark img"))assert.equal(image.getAttribute("src"),"assets/zamyilton-dragon-gold-purple.png");
   assert.equal(document.querySelectorAll(".project-atlas a").length,4);
   assert.equal(document.querySelectorAll(".artwork-trigger").length,4);
   for(const button of document.querySelectorAll(".artwork-trigger"))assert.ok(!button.closest('[aria-hidden="true"]'));
@@ -50,7 +51,7 @@ test("stylesheets are valid and motion can be disabled",async()=>{
   assert.ok(css.includes("max-width:850px"));
 });
 
-test("dragon sculpture is finite, volumetric, and has an open eye",()=>{
+test("first dragon sculpture is finite, volumetric, and preserves its negative space",()=>{
   const geometry=buildDragonGeometry();geometry.computeBoundingBox();
   const b=geometry.boundingBox;
   assert.ok(b.max.x-b.min.x>2&&b.max.x-b.min.x<2.6);
@@ -68,10 +69,11 @@ test("dragon sculpture is finite, volumetric, and has an open eye",()=>{
   const material=new THREE.MeshBasicMaterial({side:THREE.DoubleSide});
   const mesh=new THREE.Mesh(geometry,material),ray=new THREE.Raycaster();
   mesh.updateMatrixWorld();
-  ray.set(new THREE.Vector3(.28,-.02,3),new THREE.Vector3(0,0,-1));
+  ray.set(new THREE.Vector3(.55,.05,3),new THREE.Vector3(0,0,-1));
   assert.ok(ray.intersectObject(mesh).length>0,"body has solid front and back faces");
-  ray.set(new THREE.Vector3(.9033,.475,3),new THREE.Vector3(0,0,-1));
-  assert.equal(ray.intersectObject(mesh).length,0,"eye remains a cutout through the extrusion");
+  ray.set(new THREE.Vector3(-.1,0,3),new THREE.Vector3(0,0,-1));
+  assert.equal(ray.intersectObject(mesh).length,0,"the open space between wing and body is not filled");
+  assert.ok(Array.from(geometry.getAttribute("uv").array).every(value=>Number.isFinite(value)&&value>=0&&value<=1),"artwork coordinates stay inside the selected PNG");
   material.dispose();
   geometry.dispose();
 });
@@ -82,6 +84,9 @@ test("scalable icons stay synchronized with the sculpture source",async()=>{
   assert.equal(await fs.readFile(path.join(dist,"assets/favicon.svg"),"utf8"),identitySVG({background:true}));
   const cover=await fs.readFile(path.join(dist,"assets/social-cover.png"));
   assert.equal(cover.readUInt32BE(16),1200);assert.equal(cover.readUInt32BE(20),630);
+  const logo=await fs.readFile(path.join(dist,"assets/zamyilton-dragon-gold-purple.png"));
+  assert.equal(logo.readUInt32BE(16),1254);assert.equal(logo.readUInt32BE(20),1254);
+  assert.equal(logo[25],6,"selected artwork retains its RGBA transparency");
 });
 
 test("scroll inputs and mobile rendering budgets stay bounded",()=>{
