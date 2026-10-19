@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Sitemap: https://zamyilton.vercel.app/sitemap.xml
+
