@@ -1,0 +1,18 @@
+.dragon-intro{display:none;position:fixed;inset:0;z-index:1000;overflow:hidden;background:#0b0910;color:#dfc08b;isolation:isolate;touch-action:none}
+html[data-intro] .dragon-intro{display:block}
+html[data-intro] body{overflow:hidden}
+.intro-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.intro-top{position:absolute;z-index:1;top:max(32px,env(safe-area-inset-top));left:clamp(24px,4vw,64px);display:flex;align-items:center;gap:12px;font-size:8px;font-weight:400;letter-spacing:.22em;color:#a89ab9}
+.intro-top::before{content:"";width:4px;height:4px;background:#dfc08b;border-radius:50%;box-shadow:0 0 16px #dfc08b66}
+.intro-signature{position:absolute;left:0;right:0;top:calc(50% + min(163px,27vw,21.5vh) + 34px);text-align:center;pointer-events:none}
+.intro-signature>span{display:block;font-size:clamp(10px,1vw,13px);font-weight:700;letter-spacing:.48em;padding-left:.48em}
+.intro-signature>small{display:block;margin-top:14px;font-size:7px;font-weight:400;letter-spacing:.2em;color:#82718f}
+.intro-wait{display:block;width:40px;height:1px;margin:26px auto 0;background:#a073d7;transform-origin:left;animation:intro-wait 1s ease-in-out infinite alternate}
+.dragon-intro[data-ready=true] .intro-wait{visibility:hidden}
+.intro-skip{position:absolute;right:clamp(24px,4vw,64px);bottom:max(30px,env(safe-area-inset-bottom));display:flex;align-items:center;gap:20px;padding:12px 0;font-size:9px;letter-spacing:.04em;color:#b3a6be;transition:color .2s}
+.intro-skip:hover{color:#f3eee7}
+.intro-skip>kbd{font:7px Rubik,Arial,sans-serif;border:1px solid #a073d733;padding:2px 5px;color:#756580}
+.intro-skip>span{color:#dfc08b;font-size:15px}
+@keyframes intro-wait{from{opacity:.25;transform:scaleX(.25)}to{opacity:.7;transform:scaleX(1)}}
+@media(max-width:600px){.intro-signature>small{font-size:6px}.intro-skip>kbd{display:none}.intro-skip{font-size:9px}.intro-top{font-size:7px}}
+@media(prefers-reduced-motion:reduce){html[data-intro] .dragon-intro{display:none}html[data-intro] body{overflow:auto}.intro-wait{animation:none}}

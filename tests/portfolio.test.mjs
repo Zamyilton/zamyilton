@@ -15,6 +15,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),".."),dist=
 const html=await fs.readFile(path.join(dist,"index.html"),"utf8");
 const appSource=await fs.readFile(path.join(dist,"app.js"),"utf8");
 const mathSource=await fs.readFile(path.join(dist,"motion.mjs"),"utf8");
+const introSource=await fs.readFile(path.join(dist,"intro.mjs"),"utf8");
 
 test("all local links and chapter controls resolve without JavaScript",async()=>{
   const {document}=parseHTML(html),ids=Array.from(document.querySelectorAll("[id]"),e=>e.id);
@@ -41,7 +42,7 @@ test("all local links and chapter controls resolve without JavaScript",async()=>
 });
 
 test("stylesheets are valid and motion can be disabled",async()=>{
-  const css=(await Promise.all(["styles.css","experience.css"].map(file=>fs.readFile(path.join(dist,file),"utf8")))).join("\n");
+  const css=(await Promise.all(["styles.css","experience.css","intro.css"].map(file=>fs.readFile(path.join(dist,file),"utf8")))).join("\n");
   const ast=postcss.parse(css);
   assert.ok(ast.nodes.length>20);
   for(const hex of css.match(/#[a-f0-9]+\b/gi)||[])assert.ok([3,4,6,8].includes(hex.length-1),"Invalid color "+hex);
@@ -121,8 +122,9 @@ async function environment(reduced=true){
   const localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v)};
   const context=vm.createContext({window,document,navigator,localStorage,requestAnimationFrame,cancelAnimationFrame:id=>frames.delete(id),console,Date,Math,Number,Array,String,performance:{now:()=>0}});
   const math=new vm.SourceTextModule(mathSource,{context,identifier:"motion.mjs"});
+  const intro=new vm.SourceTextModule(introSource,{context,identifier:"intro.mjs"});
   const app=new vm.SourceTextModule(appSource,{context,identifier:"app.js"});
-  await app.link(specifier=>{assert.equal(specifier,"./motion.mjs");return math;});
+  await app.link(specifier=>{assert.ok(["./motion.mjs","./intro.mjs"].includes(specifier));return specifier==="./motion.mjs"?math:intro;});
   await app.evaluate();
   function flush(){for(const [id,fn] of [...frames]){frames.delete(id);fn(0);}}
   flush();

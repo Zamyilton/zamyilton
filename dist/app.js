@@ -1,4 +1,5 @@
 import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
+import { startDragonIntro } from "./intro.mjs";
 "use strict";
 (function(){
   var projectData = {
@@ -59,7 +60,7 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
   try { stored = localStorage.getItem("zamyilton-motion"); } catch (_) {}
   let manualMotion = stored === "on" || stored === "off";
   let motionEnabled = manualMotion ? stored === "on" : !preference.matches;
-  let scene = null, sceneLoading = false, sceneFailed = false, sceneAllowed = false;
+  let scene = null, sceneLoading = false, sceneFailed = false, sceneAllowed = false, intro = null;
   let frame = 0, sceneInput = {progress:0,x:0,y:0};
   const hero = document.querySelector(".hero-section");
   const heroArt = document.getElementById("hero-art");
@@ -80,7 +81,7 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
     finishButtons.forEach(option=>option.setAttribute("aria-pressed",String(option===button)));
     scene?.setFinish(sculptureFinish);
   }));
-  function scenePaused() { return !motionEnabled || !!dialog?.hasAttribute("open"); }
+  function scenePaused() { return !motionEnabled || !!intro?.active || !!dialog?.hasAttribute("open"); }
   function applyMotion() {
     root.dataset.motion = motionEnabled ? "on" : "off";
     if(motionButton){
@@ -90,6 +91,7 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
       motionButton.querySelector(".motion-label").textContent=motionEnabled?"Motion on":"Motion off";
     }
     if(!motionEnabled){
+      intro?.stop();
       parallaxElements.forEach(el=>el.style.setProperty("--parallax-y","0px"));
       marquees.forEach(el=>el.style.setProperty("--word-shift","0px"));
       document.querySelectorAll(".magnetic").forEach(el=>{el.style.setProperty("--mx","0px");el.style.setProperty("--my","0px");});
@@ -101,7 +103,7 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
     requestUpdate();
   }
   function ensureScene(){
-    if(!sceneAllowed||scene||sceneLoading||sceneFailed||!motionEnabled||navigator.connection?.saveData||!("WebGL2RenderingContext" in window))return;
+    if(intro?.active||!sceneAllowed||scene||sceneLoading||sceneFailed||!motionEnabled||navigator.connection?.saveData||!("WebGL2RenderingContext" in window))return;
     const rect=hero?.getBoundingClientRect();
     if(rect&&(rect.bottom<0||rect.top>window.innerHeight))return;
     sceneLoading=true;
@@ -291,6 +293,7 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
   window.addEventListener("pagehide",event=>{if(event.persisted)scene?.setPaused(true);else scene?.dispose();});
   window.addEventListener("pageshow",()=>scene?.setPaused(scenePaused()));
   applyMotion();
+  intro=startDragonIntro({enabled:motionEnabled,onComplete:()=>{scene?.setPaused(scenePaused());requestUpdate();}});
   const allowScene=()=>{sceneAllowed=true;ensureScene();};
   if("requestIdleCallback" in window)window.requestIdleCallback(allowScene,{timeout:1500});else window.setTimeout(allowScene,500);
 })();

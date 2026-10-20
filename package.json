@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check dist/app.js && node --check dist/scene.mjs && node --check dist/motion.mjs && node --check dist/identity.mjs && node --check scripts/export-identity.mjs",
-    "test": "node --experimental-vm-modules --test tests/portfolio.test.mjs"
+    "check": "node --check dist/app.js && node --check dist/intro.mjs && node --check dist/scene.mjs && node --check dist/motion.mjs && node --check dist/identity.mjs && node --check scripts/export-identity.mjs",
+    "test": "node --experimental-vm-modules --test tests/*.test.mjs"
   },
   "devDependencies": {
     "linkedom": "0.18.12",
