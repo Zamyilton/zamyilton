@@ -6,7 +6,7 @@ Frontend developer in Lagos, Nigeria. I build responsive interfaces with React, 
 
 **Open to hybrid frontend opportunities in Lagos. Available immediately.**
 
-[Portfolio](https://zamyilton.vercel.app/) · [CV](https://zamyilton.vercel.app/assets/Isaac_Gold_CV.pdf?v=20261020) · [One-column CV](https://zamyilton.vercel.app/assets/Isaac_Gold_Frontend_ATS_CV.pdf?v=20261020) · [Email](mailto:zamyilton@ileotaku.com)
+[Portfolio](https://zamyilton.vercel.app/) · [CV](https://zamyilton.vercel.app/assets/Isaac_Gold_CV.pdf?v=20261020-email) · [One-column CV](https://zamyilton.vercel.app/assets/Isaac_Gold_Frontend_ATS_CV.pdf?v=20261020-email) · [Email](mailto:zamyilton@eternalnexus.app)
 
 ## Selected work
 

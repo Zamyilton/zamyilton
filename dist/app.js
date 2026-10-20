@@ -12,7 +12,7 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
         ["Technology", "React, Next.js, TypeScript, Firebase Authentication, Firestore, Tailwind CSS and Zustand."],
         ["Status", "Beta product in active development. Specific features continue to be tested and improved."]
       ],
-      links: [["Visit IleOtaku", "https://ileotaku.com"], ["Discuss this project", "mailto:zamyilton@ileotaku.com?subject=IleOtaku%20project"]]
+      links: [["Visit IleOtaku", "https://ileotaku.com"], ["Discuss this project", "mailto:zamyilton@eternalnexus.app?subject=IleOtaku%20project"]]
     },
     nexus: {
       title: "Eternal Nexus Echoes", kind: "BROWSER RPG / INDEPENDENT PRODUCT", type: "WORLDS / SYSTEMS / INTERACTION",
@@ -24,7 +24,7 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
         ["Technology", "Next.js, React, TypeScript, React Three Fiber, Three.js, Colyseus, Firebase Authentication and Firestore."],
         ["Status", "In development. The project continues to evolve through gameplay and interface testing."]
       ],
-      links: [["Request a walkthrough", "mailto:zamyilton@ileotaku.com?subject=Eternal%20Nexus%20Echoes%20walkthrough"]]
+      links: [["Request a walkthrough", "mailto:zamyilton@eternalnexus.app?subject=Eternal%20Nexus%20Echoes%20walkthrough"]]
     },
     valen: {
       title: "VALEN", kind: "ANDROID / ASSISTANT PROTOTYPE", type: "VOICE / MEMORY / INTERACTION",
@@ -36,7 +36,7 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
         ["Technology", "Kotlin, Jetpack Compose, Android speech APIs, GitHub Actions, Ubuntu and systemd."],
         ["Status", "Prototype. The long-term autonomous assistant vision extends beyond the capabilities represented here."]
       ],
-      links: [["Discuss the prototype", "mailto:zamyilton@ileotaku.com?subject=VALEN%20prototype"]]
+      links: [["Discuss the prototype", "mailto:zamyilton@eternalnexus.app?subject=VALEN%20prototype"]]
     },
     zuwachs: {
       title: "Zuwachs Travel and Tours", kind: "BUSINESS WEBSITE", type: "INFORMATION / CONSULTATION / ENQUIRIES",
@@ -47,7 +47,7 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
         ["Project work", ["A website presenting travel service information and consultation calls to action.", "Contact details and enquiry form interfaces organized around prospective customer questions.", "Service content covering visa assistance, travel support and related offerings."]],
         ["Status", "Live business website. The public site is available at zuwachstravel.com."]
       ],
-      links: [["Visit Zuwachs Travel", "https://zuwachstravel.com"], ["Discuss a website project", "mailto:zamyilton@ileotaku.com?subject=Website%20project"]]
+      links: [["Visit Zuwachs Travel", "https://zuwachstravel.com"], ["Discuss a website project", "mailto:zamyilton@eternalnexus.app?subject=Website%20project"]]
     }
   };
 
@@ -281,7 +281,7 @@ import { clamp, heroProgress, parallaxOffset } from "./motion.mjs";
   if(copy&&navigator.clipboard&&window.isSecureContext){
     copy.hidden=false;copy.addEventListener("click",async()=>{
       try{
-        await navigator.clipboard.writeText("zamyilton@ileotaku.com");copy.textContent="Email copied ✓";
+        await navigator.clipboard.writeText("zamyilton@eternalnexus.app");copy.textContent="Email copied ✓";
         document.getElementById("copy-status").textContent="Email address copied to clipboard.";
         window.setTimeout(()=>{copy.textContent="Copy email ⧉";},2400);
       }catch(_){document.getElementById("copy-status").textContent="Use the email link to get in touch.";}

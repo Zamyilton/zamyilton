@@ -195,7 +195,7 @@ test("reduced motion is respected, manual choice is saved, and email copy works"
   assert.equal(document.documentElement.dataset.motion,"off");
   assert.equal(storage.get("zamyilton-motion"),"off");
   const copy=document.querySelector(".copy-email");copy.click();await new Promise(resolve=>setImmediate(resolve));
-  assert.deepEqual(copied,["zamyilton@ileotaku.com"]);
+  assert.deepEqual(copied,["zamyilton@eternalnexus.app"]);
   assert.equal(document.getElementById("copy-status").textContent,"Email address copied to clipboard.");
 });
 
