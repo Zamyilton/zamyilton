@@ -3,33 +3,30 @@ import assert from "node:assert/strict";
 import {parseHTML} from "linkedom";
 import fs from "node:fs/promises";
 import vm from "node:vm";
-import {INTRO_TIMING,introPose,deformDragonPoint,startDragonIntro} from "../dist/intro.mjs";
+import {INTRO_TIMING,introPose,dragonPoint,startDragonIntro} from "../dist/intro.mjs";
 
 const html=await fs.readFile(new URL("../dist/index.html",import.meta.url),"utf8");
 
-test("the flight stops at screen center, curls into the original icon, then breathes",()=>{
+test("the favicon stays centered and unchanged throughout its purple breath",()=>{
   for(const [width,height] of [[320,568],[390,844],[1440,900]]) {
-    assert.ok(introPose(0,width,height).x<0);
-    const landing=introPose(INTRO_TIMING.fly,width,height);
-    assert.ok(Math.abs(landing.x-width/2)<1e-8);assert.equal(landing.y,height/2);
-    assert.equal(landing.phase,"hover");assert.equal(landing.fire,0);
-    const end=introPose(INTRO_TIMING.curl,width,height);
-    for(const [u,v] of [[0,0],[.922,.354],[.17,.55],[.9,.94],[1,1]]) {
-      const p=deformDragonPoint(u,v,end);
-      assert.ok(Math.abs(p.x-(width/2+(u-.5)*end.size))<1e-8);
-      assert.ok(Math.abs(p.y-(height/2+(v-.5)*end.size))<1e-8);
-    }
-    assert.equal(end.fire,0,"fire starts only after the curl is complete");
-    assert.ok(introPose(INTRO_TIMING.fire+300,width,height).fire>.9);
-    assert.equal(introPose(INTRO_TIMING.end,width,height).opacity,0);
-    for(let t=0;t<=INTRO_TIMING.end;t+=45)for(const [u,v] of [[0,0],[.7,.26],[.92,.35],[.5,.66],[.9,.94],[1,1]]) {
-      const pose=introPose(t,width,height),point=deformDragonPoint(u,v,pose);
-      assert.ok(Number.isFinite(point.x)&&Number.isFinite(point.y));
+    const initial=introPose(0,width,height);
+    assert.equal(initial.phase,"appear");assert.equal(initial.fire,0);
+    assert.equal(initial.appearance,0);
+    assert.equal(introPose(INTRO_TIMING.appear,width,height).appearance,1);
+    for(let t=0;t<=INTRO_TIMING.end;t+=45) {
+      const pose=introPose(t,width,height);
+      assert.equal(pose.x,width/2);assert.equal(pose.y,height/2);
+      assert.equal(pose.size,initial.size,"the mark does not scale or curl");
+      for(const [u,v] of [[0,0],[.922,.354],[.17,.55],[.9,.94],[1,1]]) {
+        const point=dragonPoint(u,v,pose);
+        assert.equal(point.x,width/2+(u-.5)*initial.size);
+        assert.equal(point.y,height/2+(v-.5)*initial.size);
+      }
       assert.ok(pose.fire>=0&&pose.fire<=1&&pose.opacity>=0&&pose.opacity<=1);
     }
+    assert.ok(introPose(INTRO_TIMING.fire+300,width,height).fire>.9);
+    assert.equal(introPose(INTRO_TIMING.end,width,height).opacity,0);
   }
-  const a=deformDragonPoint(.17,.5,introPose(500,1440,900)),b=deformDragonPoint(.17,.5,introPose(650,1440,900));
-  assert.notEqual(a.y,b.y,"flight includes wing/body deformation");
 });
 
 function environment({enabled=true}={}) {
